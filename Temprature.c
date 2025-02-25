@@ -4,23 +4,26 @@ int main() {
     float celsius, fahrenheit;
     int choice;
 
+    // Display menu
     printf("\n=== Temperature Converter ===\n");
     printf("1. Convert Celsius to Fahrenheit\n");
     printf("2. Convert Fahrenheit to Celsius\n");
     printf("Enter your choice (1 or 2): ");
     
-    if (scanf("%d", &choice) != 1) {
+    if (scanf("%d", &choice) != 1) {  // Check if input is a valid number
         printf("\nError: Invalid input! Please enter a number.\n");
         return 1;
     }
 
-    if (choice == 1) {
+    if (choice == 1) {  
+        // Celsius to Fahrenheit conversion
         printf("\nEnter temperature in Celsius: ");
         scanf("%f", &celsius);
         fahrenheit = (celsius * 9 / 5) + 32;
         printf("Result: %.2f°C = %.2f°F\n", celsius, fahrenheit);
     } 
-    else if (choice == 2) {
+    else if (choice == 2) {  
+        // Fahrenheit to Celsius conversion
         printf("\nEnter temperature in Fahrenheit: ");
         scanf("%f", &fahrenheit);
         celsius = (fahrenheit - 32) * 5 / 9;
