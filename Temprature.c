@@ -8,7 +8,11 @@ int main() {
     printf("1. Celsius to Fahrenheit\n");
     printf("2. Fahrenheit to Celsius\n");
     printf("Enter your choice (1 or 2): ");
-    scanf("%d", &choice);
+    
+    if (scanf("%d", &choice) != 1) {
+        printf("Invalid input! Please enter a number.\n");
+        return 1;
+    }
 
     if (choice == 1) {
         printf("Enter temperature in Celsius: ");
@@ -23,7 +27,7 @@ int main() {
         printf("Temperature in Celsius: %.2f°C\n", celsius);
     } 
     else {
-        printf("Invalid choice!\n");
+        printf("Invalid choice! Please enter 1 or 2.\n");
     }
 
     return 0;
