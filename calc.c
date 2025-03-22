@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdint.h> // Include for intptr_t
 
 #define SCREEN_ID 1
 #define BTN_0 10
@@ -28,7 +27,7 @@ HWND hScreen; // Display screen
 LRESULT CALLBACK WindowProcedure(HWND, UINT, WPARAM, LPARAM);
 
 void AddButton(HWND hwnd, int id, char* text, int x, int y) {
-    CreateWindow("button", text, WS_VISIBLE | WS_CHILD, x, y, 50, 50, hwnd, (HMENU)(intptr_t)id, NULL, NULL);
+    CreateWindow("button", text, WS_VISIBLE | WS_CHILD, x, y, 50, 50, hwnd, (HMENU)id, NULL, NULL);
 }
 
 void AddButtons(HWND hwnd) {
@@ -45,15 +44,51 @@ void AddButtons(HWND hwnd) {
     }
 }
 
-void UpdateScreen(HWND hwnd) {
+void UpdateScreen() {
     SetWindowText(hScreen, expression);
 }
 
-void Calculate() {
+int EvaluateExpression(const char* expr) {
     int result = 0;
-    // Basic parsing logic (can be improved)
-    result = atoi(expression); // Convert to int (simple logic, replace with better parser)
+    char op = 0;
+    int num = 0;
+    
+    for (int i = 0; expr[i] != '\0'; i++) {
+        if (expr[i] >= '0' && expr[i] <= '9') {
+            num = num * 10 + (expr[i] - '0');
+        } else {
+            if (op == 0) {
+                result = num;
+            } else {
+                switch (op) {
+                    case '+': result += num; break;
+                    case '-': result -= num; break;
+                    case '*': result *= num; break;
+                    case '/': if (num != 0) result /= num; break;
+                }
+            }
+            op = expr[i];
+            num = 0;
+        }
+    }
+    
+    if (op == 0) result = num;
+    else {
+        switch (op) {
+            case '+': result += num; break;
+            case '-': result -= num; break;
+            case '*': result *= num; break;
+            case '/': if (num != 0) result /= num; break;
+        }
+    }
+
+    return result;
+}
+
+void Calculate() {
+    int result = EvaluateExpression(expression);
     sprintf(expression, "%d", result);
+    UpdateScreen();
 }
 
 LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
@@ -63,16 +98,18 @@ LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             break;
         case WM_COMMAND:
             if (wp >= BTN_0 && wp <= BTN_9) {
-                char num[2] = {(char)(wp - BTN_0 + '0'), '\0'};
-                strcat(expression, num);
-            } else if (wp == BTN_ADD) strcat(expression, "+");
-            else if (wp == BTN_SUB) strcat(expression, "-");
-            else if (wp == BTN_MUL) strcat(expression, "*");
-            else if (wp == BTN_DIV) strcat(expression, "/");
+                if (strlen(expression) < 255) {
+                    char num[2] = {(char)(wp - BTN_0 + '0'), '\0'};
+                    strncat(expression, num, 1);
+                }
+            } else if (wp == BTN_ADD && strlen(expression) < 255) strncat(expression, "+", 1);
+            else if (wp == BTN_SUB && strlen(expression) < 255) strncat(expression, "-", 1);
+            else if (wp == BTN_MUL && strlen(expression) < 255) strncat(expression, "*", 1);
+            else if (wp == BTN_DIV && strlen(expression) < 255) strncat(expression, "/", 1);
             else if (wp == BTN_EQ) Calculate();
-            else if (wp == BTN_CLR) strcpy(expression, "");
+            else if (wp == BTN_CLR) memset(expression, 0, sizeof(expression));
 
-            UpdateScreen(hwnd);
+            UpdateScreen();
             break;
         case WM_DESTROY:
             PostQuitMessage(0);
