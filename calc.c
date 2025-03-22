@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h> // Include for intptr_t
 
 #define SCREEN_ID 1
 #define BTN_0 10
@@ -27,7 +28,7 @@ HWND hScreen; // Display screen
 LRESULT CALLBACK WindowProcedure(HWND, UINT, WPARAM, LPARAM);
 
 void AddButton(HWND hwnd, int id, char* text, int x, int y) {
-    CreateWindow("button", text, WS_VISIBLE | WS_CHILD, x, y, 50, 50, hwnd, (HMENU)id, NULL, NULL);
+    CreateWindow("button", text, WS_VISIBLE | WS_CHILD, x, y, 50, 50, hwnd, (HMENU)(intptr_t)id, NULL, NULL);
 }
 
 void AddButtons(HWND hwnd) {
