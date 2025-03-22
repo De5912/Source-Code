@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <ctype.h>
+
+#define MAX_EXPR_LEN 256
 
 #define BTN_0 100
 #define BTN_1 101
@@ -22,8 +23,8 @@
 #define BTN_C   115
 #define BTN_BK  116  // Backspace button
 
-char expression[256] = "";  // Stores the input expression
-HWND hEdit;  // Handle for text box
+char expression[MAX_EXPR_LEN] = "";  // Stores user input
+HWND hEdit;  // Handle for display box
 
 LRESULT CALLBACK WindowProcedure(HWND, UINT, WPARAM, LPARAM);
 void AddButton(HWND hwnd, int id, char* text, int x, int y);
@@ -82,7 +83,7 @@ LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             int id = LOWORD(wp);
 
             if (id == BTN_C) {
-                expression[0] = '\0';  // Clear expression
+                expression[0] = '\0';  // Clear input
             } else if (id == BTN_BK) {
                 if (strlen(expression) > 0) {
                     expression[strlen(expression) - 1] = '\0';  // Backspace
@@ -94,8 +95,18 @@ LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
                 } else {
                     sprintf(expression, "%.2f", result);
                 }
-            } else if (strlen(expression) < 255) {
-                char newChar[2] = { '0' + (id - BTN_0), '\0' };
+            } else if (strlen(expression) < MAX_EXPR_LEN - 1) {
+                char newChar[2] = { '\0', '\0' };
+                if (id >= BTN_0 && id <= BTN_9) {
+                    newChar[0] = '0' + (id - BTN_0);
+                } else {
+                    switch (id) {
+                    case BTN_ADD: newChar[0] = '+'; break;
+                    case BTN_SUB: newChar[0] = '-'; break;
+                    case BTN_MUL: newChar[0] = '*'; break;
+                    case BTN_DIV: newChar[0] = '/'; break;
+                    }
+                }
                 strcat(expression, newChar);
             }
 
@@ -104,14 +115,14 @@ LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         break;
 
     case WM_CHAR:
-        if (isalnum(wp) || wp == '+' || wp == '-' || wp == '*' || wp == '/') {
-            if (strlen(expression) < 255) {
+        if ((wp >= '0' && wp <= '9') || wp == '+' || wp == '-' || wp == '*' || wp == '/') {
+            if (strlen(expression) < MAX_EXPR_LEN - 1) {
                 char newChar[2] = { (char)wp, '\0' };
                 strcat(expression, newChar);
             }
         } else if (wp == '\b' && strlen(expression) > 0) {
             expression[strlen(expression) - 1] = '\0';  // Backspace
-        } else if (wp == '\r') {
+        } else if (wp == '\r') {  // Enter key to evaluate
             double result = EvaluateExpression(expression);
             if (result == -99999999) {
                 strcpy(expression, "ERROR");
