@@ -1,7 +1,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdint.h>
+#include <stdlib.h>
 #include <ctype.h>
 
 #define BTN_0 100
@@ -20,8 +20,11 @@
 #define BTN_DIV 113
 #define BTN_EQ  114
 #define BTN_C   115
+#define BTN_BK  116  // Backspace button
 
-char expression[256] = "";
+char expression[256] = "";  // Stores the input expression
+HWND hEdit;  // Handle for text box
+
 LRESULT CALLBACK WindowProcedure(HWND, UINT, WPARAM, LPARAM);
 void AddButton(HWND hwnd, int id, char* text, int x, int y);
 double EvaluateExpression(const char* expr);
@@ -44,72 +47,79 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR args, int ncmdsho
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
+
     return 0;
 }
 
 LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
-    static HWND hEdit;
-
     switch (msg) {
     case WM_CREATE:
         hEdit = CreateWindow("EDIT", "", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_RIGHT | ES_READONLY,
             20, 20, 240, 30, hwnd, NULL, NULL, NULL);
 
+        // Number buttons
         int x = 20, y = 60;
         for (int i = 1; i <= 9; i++) {
-            AddButton(hwnd, BTN_0 + i, (char[2]){ '0' + i, '\0' }, x, y);
+            AddButton(hwnd, BTN_0 + i, (char[2]) { '0' + i, '\0' }, x, y);
             x += 60;
             if (i % 3 == 0) { x = 20; y += 60; }
         }
-        AddButton(hwnd, BTN_0, "0", 80, y); // Zero button
+        AddButton(hwnd, BTN_0, "0", 80, y);  // Zero in the middle
 
+        // Operator buttons
         AddButton(hwnd, BTN_ADD, "+", 200, 60);
         AddButton(hwnd, BTN_SUB, "-", 200, 120);
         AddButton(hwnd, BTN_MUL, "*", 200, 180);
         AddButton(hwnd, BTN_DIV, "/", 200, 240);
         AddButton(hwnd, BTN_EQ, "=", 140, 240);
         AddButton(hwnd, BTN_C, "C", 20, 240);
+        AddButton(hwnd, BTN_BK, "←", 80, 240);  // Backspace
+
         break;
 
     case WM_COMMAND:
         if (HIWORD(wp) == BN_CLICKED) {
             int id = LOWORD(wp);
+
             if (id == BTN_C) {
-                expression[0] = '\0';
+                expression[0] = '\0';  // Clear expression
+            } else if (id == BTN_BK) {
+                if (strlen(expression) > 0) {
+                    expression[strlen(expression) - 1] = '\0';  // Backspace
+                }
             } else if (id == BTN_EQ) {
                 double result = EvaluateExpression(expression);
-                if (result != -99999999) {
-                    sprintf(expression, "%.2f", result);
-                } else {
+                if (result == -99999999) {
                     strcpy(expression, "ERROR");
+                } else {
+                    sprintf(expression, "%.2f", result);
                 }
             } else if (strlen(expression) < 255) {
-                char btnText[2] = { '0' + (id - BTN_0), '\0' };
-                strcat(expression, btnText);
+                char newChar[2] = { '0' + (id - BTN_0), '\0' };
+                strcat(expression, newChar);
             }
+
             SetWindowText(hEdit, expression);
         }
         break;
 
-    case WM_KEYDOWN:
-        if ((wp >= '0' && wp <= '9') || wp == '+' || wp == '-' || wp == '*' || wp == '/') {
+    case WM_CHAR:
+        if (isalnum(wp) || wp == '+' || wp == '-' || wp == '*' || wp == '/') {
             if (strlen(expression) < 255) {
-                char key[2] = { (char)wp, '\0' };
-                strcat(expression, key);
-                SetWindowText(hEdit, expression);
+                char newChar[2] = { (char)wp, '\0' };
+                strcat(expression, newChar);
             }
-        } else if (wp == VK_RETURN) {
+        } else if (wp == '\b' && strlen(expression) > 0) {
+            expression[strlen(expression) - 1] = '\0';  // Backspace
+        } else if (wp == '\r') {
             double result = EvaluateExpression(expression);
-            if (result != -99999999) {
-                sprintf(expression, "%.2f", result);
-            } else {
+            if (result == -99999999) {
                 strcpy(expression, "ERROR");
+            } else {
+                sprintf(expression, "%.2f", result);
             }
-            SetWindowText(hEdit, expression);
-        } else if (wp == VK_BACK && strlen(expression) > 0) {
-            expression[strlen(expression) - 1] = '\0';
-            SetWindowText(hEdit, expression);
         }
+        SetWindowText(hEdit, expression);
         break;
 
     case WM_DESTROY:
@@ -135,8 +145,7 @@ double EvaluateExpression(const char* expr) {
         case '-': return num1 - num2;
         case '*': return num1 * num2;
         case '/': return (num2 != 0) ? num1 / num2 : -99999999;
-        default: return -99999999;
         }
     }
-    return -99999999;
+    return -99999999;  // Error
 }
